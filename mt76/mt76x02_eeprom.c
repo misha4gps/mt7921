@@ -4,9 +4,12 @@
  * Copyright (C) 2018 Lorenzo Bianconi <lorenzo.bianconi83@gmail.com>
  */
 
-#include <linux/unaligned.h>
-
 #include "mt76x02_eeprom.h"
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 12, 0)
+#include <linux/unaligned.h>
+#else
+#include <asm/unaligned.h>
+#endif
 
 static int
 mt76x02_efuse_read(struct mt76x02_dev *dev, u16 addr, u8 *data,

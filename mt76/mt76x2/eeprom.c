@@ -5,8 +5,12 @@
 
 #include <linux/module.h>
 #include <linux/of.h>
-#include <linux/unaligned.h>
 #include "mt76x2.h"
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 12, 0)
+#include <linux/unaligned.h>
+#else
+#include <asm/unaligned.h>
+#endif
 #include "eeprom.h"
 
 #define EE_FIELD(_name, _value) [MT_EE_##_name] = (_value) | 1

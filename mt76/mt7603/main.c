@@ -23,7 +23,11 @@ mt7603_start(struct ieee80211_hw *hw)
 }
 
 static void
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 11, 0))
 mt7603_stop(struct ieee80211_hw *hw, bool suspend)
+#else
+mt7603_stop(struct ieee80211_hw *hw)
+#endif
 {
 	struct mt7603_dev *dev = hw->priv;
 

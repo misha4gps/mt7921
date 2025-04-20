@@ -394,7 +394,11 @@ mt7615_mcu_rx_radar_detected(struct mt7615_dev *dev, struct sk_buff *skb)
 	if (mt76_phy_dfs_state(mphy) < MT_DFS_STATE_CAC)
 		return;
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 12, 0)
 	ieee80211_radar_detected(mphy->hw, NULL);
+#else
+	ieee80211_radar_detected(mphy->hw);
+#endif
 	dev->hw_pattern++;
 }
 

@@ -42,6 +42,15 @@ bool ____mt76_poll_msec(struct mt76_dev *dev, u32 offset, u32 mask, u32 val,
 }
 EXPORT_SYMBOL_GPL(____mt76_poll_msec);
 
+#if defined(RHEL95)
+bool __mt76_poll_msec(struct mt76_dev *dev, u32 offset, u32 mask, u32 val,
+		      int timeout)
+{
+	return ____mt76_poll_msec(dev, offset, mask, val, timeout, 10);
+}
+EXPORT_SYMBOL_GPL(__mt76_poll_msec);
+#endif
+
 int mt76_wcid_alloc(u32 *mask, int size)
 {
 	int i, idx = 0, cur;

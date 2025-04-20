@@ -273,7 +273,11 @@ static int mt7921_start(struct ieee80211_hw *hw)
 	return err;
 }
 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 11, 0))
+void mt7921_stop(struct ieee80211_hw *hw)
+#else
 static void mt7921_stop(struct ieee80211_hw *hw, bool suspend)
+#endif
 {
 	struct mt792x_dev *dev = mt792x_hw_dev(hw);
 	int err = 0;
@@ -286,8 +290,16 @@ static void mt7921_stop(struct ieee80211_hw *hw, bool suspend)
 			return;
 	}
 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 11, 0))
+	mt792x_stop(hw);
+#else
 	mt792x_stop(hw, false);
+#endif
 }
+
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 11, 0))
+EXPORT_SYMBOL_GPL(mt7921_stop);
+#endif
 
 static int
 mt7921_add_interface(struct ieee80211_hw *hw, struct ieee80211_vif *vif)
@@ -901,6 +913,32 @@ void mt7921_mac_sta_remove(struct mt76_dev *mdev, struct ieee80211_vif *vif,
 	mt76_connac_power_save_sched(&dev->mphy, &dev->pm);
 }
 EXPORT_SYMBOL_GPL(mt7921_mac_sta_remove);
+
+
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 11, 0))
+void mt7921_mac_sta_assoc(struct mt76_dev *mdev, struct ieee80211_vif *vif,
+			  struct ieee80211_sta *sta)
+{
+	struct mt792x_dev *dev = container_of(mdev, struct mt792x_dev, mt76);
+	struct mt792x_sta *msta = (struct mt792x_sta *)sta->drv_priv;
+	struct mt792x_vif *mvif = (struct mt792x_vif *)vif->drv_priv;
+
+	mt7921_mutex_acquire(dev);
+
+	if (vif->type == NL80211_IFTYPE_STATION && !sta->tdls)
+		mt76_connac_mcu_uni_add_bss(&dev->mphy, vif, &mvif->sta.deflink.wcid,
+					    true, mvif->bss_conf.mt76.ctx);
+
+	mt7921_mac_wtbl_update(dev, msta->deflink.wcid.idx,
+			       MT_WTBL_UPDATE_ADM_COUNT_CLEAR);
+
+	mt7921_mcu_sta_update(dev, sta, vif, true, MT76_STA_INFO_STATE_ASSOC);
+
+	mt7921_mutex_release(dev);
+}
+EXPORT_SYMBOL_GPL(mt7921_mac_sta_assoc);
+#endif
+
 
 static int mt7921_set_rts_threshold(struct ieee80211_hw *hw, u32 val)
 {

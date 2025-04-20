@@ -335,4 +335,19 @@ int mt7921_mcu_abort_roc(struct mt792x_phy *phy, struct mt792x_vif *vif,
 			 u8 token_id);
 void mt7921_roc_abort_sync(struct mt792x_dev *dev);
 int mt7921_mcu_set_rssimonitor(struct mt792x_dev *dev, struct ieee80211_vif *vif);
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 11, 0))
+void mt7921_mcu_exit(struct mt792x_dev *dev);
+void mt7921_sta_ps(struct mt76_dev *mdev, struct ieee80211_sta *sta, bool ps);
+void mt7921_update_channel(struct mt76_phy *mphy);
+void mt7921_stop(struct ieee80211_hw *hw);
+int mt7921_mcu_fill_message(struct mt76_dev *mdev, struct sk_buff *skb,
+			    int cmd, int *wait_seq);
+#define mt7921_mutex_acquire(dev)	\
+	mt76_connac_mutex_acquire(&(dev)->mt76, &(dev)->pm)
+#define mt7921_mutex_release(dev)	\
+	mt76_connac_mutex_release(&(dev)->mt76, &(dev)->pm)
+void mt7921_mac_sta_assoc(struct mt76_dev *mdev, struct ieee80211_vif *vif,
+			  struct ieee80211_sta *sta);
+#endif
+
 #endif

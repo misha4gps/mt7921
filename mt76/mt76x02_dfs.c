@@ -630,7 +630,11 @@ static void mt76x02_dfs_tasklet(struct tasklet_struct *t)
 		radar_detected = mt76x02_dfs_check_detection(dev);
 		if (radar_detected) {
 			/* sw detector rx radar pattern */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 12, 0)
 			ieee80211_radar_detected(dev->mt76.hw, NULL);
+#else
+			ieee80211_radar_detected(dev->mt76.hw);
+#endif
 			mt76x02_dfs_detector_reset(dev);
 
 			return;
@@ -658,7 +662,11 @@ static void mt76x02_dfs_tasklet(struct tasklet_struct *t)
 
 		/* hw detector rx radar pattern */
 		dfs_pd->stats[i].hw_pattern++;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 12, 0)
 		ieee80211_radar_detected(dev->mt76.hw, NULL);
+#else
+		ieee80211_radar_detected(dev->mt76.hw);
+#endif
 		mt76x02_dfs_detector_reset(dev);
 
 		return;

@@ -16,6 +16,7 @@
 #include <net/mac80211.h>
 #include <linux/debugfs.h>
 #include <linux/average.h>
+#include <linux/version.h>
 
 #include "regs.h"
 

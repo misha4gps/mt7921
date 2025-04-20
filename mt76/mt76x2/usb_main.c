@@ -22,7 +22,11 @@ static int mt76x2u_start(struct ieee80211_hw *hw)
 	return 0;
 }
 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 11, 0))
+static void mt76x2u_stop(struct ieee80211_hw *hw)
+#else
 static void mt76x2u_stop(struct ieee80211_hw *hw, bool suspend)
+#endif
 {
 	struct mt76x02_dev *dev = hw->priv;
 

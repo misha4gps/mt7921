@@ -77,7 +77,11 @@ static void mt76x0u_cleanup(struct mt76x02_dev *dev)
 	mt76u_queues_deinit(&dev->mt76);
 }
 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 11, 0))
+static void mt76x0u_stop(struct ieee80211_hw *hw)
+#else
 static void mt76x0u_stop(struct ieee80211_hw *hw, bool suspend)
+#endif
 {
 	struct mt76x02_dev *dev = hw->priv;
 

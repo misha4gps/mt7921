@@ -14,6 +14,7 @@
 #include <linux/usb.h>
 #include <linux/average.h>
 #include <linux/soc/mediatek/mtk_wed.h>
+#include <linux/version.h>
 #include <net/mac80211.h>
 #include <net/page_pool/helpers.h>
 #include "util.h"
@@ -1144,7 +1145,13 @@ bool __mt76_poll(struct mt76_dev *dev, u32 offset, u32 mask, u32 val,
 
 bool ____mt76_poll_msec(struct mt76_dev *dev, u32 offset, u32 mask, u32 val,
 			int timeout, int kick);
+#if defined(RHEL95)
+bool __mt76_poll_msec(struct mt76_dev *dev, u32 offset, u32 mask, u32 val,
+		      int timeout);
+#else
 #define __mt76_poll_msec(...)         ____mt76_poll_msec(__VA_ARGS__, 10)
+#endif
+
 #define mt76_poll_msec(dev, ...)      ____mt76_poll_msec(&((dev)->mt76), __VA_ARGS__, 10)
 #define mt76_poll_msec_tick(dev, ...) ____mt76_poll_msec(&((dev)->mt76), __VA_ARGS__)
 
@@ -1491,7 +1498,10 @@ int mt76_get_min_avg_rssi(struct mt76_dev *dev, u8 phy_idx);
 s8 mt76_get_power_bound(struct mt76_phy *phy, s8 txpower);
 
 int mt76_get_txpower(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
-		     unsigned int link_id, int *dbm);
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 11, 0))
+		     unsigned int link_id,
+#endif
+		     int *dbm);
 int mt76_init_sar_power(struct ieee80211_hw *hw,
 			const struct cfg80211_sar_specs *sar);
 int mt76_get_sar_power(struct mt76_phy *phy,
@@ -1661,6 +1671,7 @@ int mt76s_hw_init(struct mt76_dev *dev, struct sdio_func *func,
 		  int hw_ver);
 u32 mt76s_rr(struct mt76_dev *dev, u32 offset);
 void mt76s_wr(struct mt76_dev *dev, u32 offset, u32 val);
+
 u32 mt76s_rmw(struct mt76_dev *dev, u32 offset, u32 mask, u32 val);
 u32 mt76s_read_pcr(struct mt76_dev *dev);
 void mt76s_write_copy(struct mt76_dev *dev, u32 offset,

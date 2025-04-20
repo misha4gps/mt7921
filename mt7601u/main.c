@@ -28,7 +28,11 @@ out:
 	return ret;
 }
 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 11, 0))
+static void mt7601u_stop(struct ieee80211_hw *hw)
+#else
 static void mt7601u_stop(struct ieee80211_hw *hw, bool suspend)
+#endif
 {
 	struct mt7601u_dev *dev = hw->priv;
 

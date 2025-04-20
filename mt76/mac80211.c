@@ -816,6 +816,7 @@ void mt76_free_device(struct mt76_dev *dev)
 }
 EXPORT_SYMBOL_GPL(mt76_free_device);
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 11, 0))
 struct mt76_phy *mt76_vif_phy(struct ieee80211_hw *hw,
 			      struct ieee80211_vif *vif)
 {
@@ -832,6 +833,7 @@ struct mt76_phy *mt76_vif_phy(struct ieee80211_hw *hw,
 	return ctx->phy;
 }
 EXPORT_SYMBOL_GPL(mt76_vif_phy);
+#endif
 
 static void mt76_rx_release_amsdu(struct mt76_phy *phy, enum mt76_rxq_id q)
 {
@@ -1041,6 +1043,7 @@ int mt76_update_channel(struct mt76_phy *phy)
 }
 EXPORT_SYMBOL_GPL(mt76_update_channel);
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 11, 0)
 static struct mt76_sband *
 mt76_get_survey_sband(struct mt76_phy *phy, int *idx)
 {
@@ -1058,6 +1061,7 @@ mt76_get_survey_sband(struct mt76_phy *phy, int *idx)
 	*idx -= phy->sband_6g.sband.n_channels;
 	return NULL;
 }
+#endif
 
 int mt76_get_survey(struct ieee80211_hw *hw, int idx,
 		    struct survey_info *survey)
@@ -1067,11 +1071,14 @@ int mt76_get_survey(struct ieee80211_hw *hw, int idx,
 	struct mt76_sband *sband = NULL;
 	struct ieee80211_channel *chan;
 	struct mt76_channel_state *state;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 11, 0)
 	int phy_idx = 0;
+#endif
 	int ret = 0;
 
 	mutex_lock(&dev->mutex);
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 11, 0)
 	for (phy_idx = 0; phy_idx < ARRAY_SIZE(dev->phys); phy_idx++) {
 		sband = NULL;
 		phy = dev->phys[phy_idx];
@@ -1088,6 +1095,23 @@ int mt76_get_survey(struct ieee80211_hw *hw, int idx,
 	}
 
 	if (!sband) {
+#else
+	if (idx == 0 && dev->drv->update_survey)
+		mt76_update_survey(phy);
+	if (idx >= phy->sband_2g.sband.n_channels +
+		   phy->sband_5g.sband.n_channels) {
+		idx -= (phy->sband_2g.sband.n_channels +
+			phy->sband_5g.sband.n_channels);
+		sband = &phy->sband_6g;
+	} else if (idx >= phy->sband_2g.sband.n_channels) {
+		idx -= phy->sband_2g.sband.n_channels;
+		sband = &phy->sband_5g;
+	} else {
+		sband = &phy->sband_2g;
+	}
+
+	if (idx >= sband->sband.n_channels) {
+#endif
 		ret = -ENOENT;
 		goto out;
 	}
@@ -1593,10 +1617,11 @@ int mt76_sta_state(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 	struct mt76_dev *dev = phy->dev;
 	enum mt76_sta_event ev;
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 11, 0)
 	phy = mt76_vif_phy(hw, vif);
 	if (!phy)
 		return -EINVAL;
-
+#endif
 	if (old_state == IEEE80211_STA_NOTEXIST &&
 	    new_state == IEEE80211_STA_NONE)
 		return mt76_sta_add(phy, vif, sta);
@@ -1710,8 +1735,12 @@ s8 mt76_get_power_bound(struct mt76_phy *phy, s8 txpower)
 EXPORT_SYMBOL_GPL(mt76_get_power_bound);
 
 int mt76_get_txpower(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
-		     unsigned int link_id, int *dbm)
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 11, 0))
+		     unsigned int link_id,
+#endif
+		     int *dbm)
 {
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 11, 0))
 	struct mt76_phy *phy = mt76_vif_phy(hw, vif);
 	int n_chains, delta;
 
@@ -1720,6 +1749,11 @@ int mt76_get_txpower(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 
 	n_chains = hweight16(phy->chainmask);
 	delta = mt76_tx_power_nss_delta(n_chains);
+#else
+	struct mt76_phy *phy = hw->priv;
+	int n_chains = hweight16(phy->chainmask);
+	int delta = mt76_tx_power_nss_delta(n_chains);
+#endif
 	*dbm = DIV_ROUND_UP(phy->txpower_cur + delta, 2);
 
 	return 0;
@@ -1894,14 +1928,20 @@ int mt76_get_antenna(struct ieee80211_hw *hw, u32 *tx_ant, u32 *rx_ant)
 {
 	struct mt76_phy *phy = hw->priv;
 	struct mt76_dev *dev = phy->dev;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 11, 0)
 	int i;
-
+#endif
 	mutex_lock(&dev->mutex);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 11, 0)
 	*tx_ant = 0;
 	for (i = 0; i < ARRAY_SIZE(dev->phys); i++)
 		if (dev->phys[i] && dev->phys[i]->hw == hw)
 			*tx_ant |= dev->phys[i]->chainmask;
 	*rx_ant = *tx_ant;
+#else
+	*tx_ant = phy->antenna_mask;
+	*rx_ant = phy->antenna_mask;
+#endif
 	mutex_unlock(&dev->mutex);
 
 	return 0;

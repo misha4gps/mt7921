@@ -1490,3 +1490,96 @@ int mt7921_mcu_set_rssimonitor(struct mt792x_dev *dev, struct ieee80211_vif *vif
 	return mt76_mcu_send_msg(&dev->mt76, MCU_CE_CMD(RSSI_MONITOR),
 				 &data, sizeof(data), false);
 }
+
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 11, 0))
+static int
+mt7921_mcu_restart(struct mt76_dev *dev)
+{
+	return mt76_mcu_send_msg(dev, -MCU_CMD_RESTART_DL_REQ, NULL, 0, true);
+}
+
+void mt7921_mcu_exit(struct mt792x_dev *dev)
+{
+	mt7921_mcu_restart(&dev->mt76);
+	skb_queue_purge(&dev->mt76.mcu.res_q);
+}
+EXPORT_SYMBOL_GPL(mt7921_mcu_exit);
+
+int mt7921_mcu_fill_message(struct mt76_dev *mdev, struct sk_buff *skb,
+			    int cmd, int *wait_seq)
+{
+	struct mt792x_dev *dev = container_of(mdev, struct mt792x_dev, mt76);
+	int txd_len, mcu_cmd = FIELD_GET(__MCU_CMD_FIELD_ID, cmd);
+	struct mt7921_uni_txd *uni_txd;
+	struct mt7921_mcu_txd *mcu_txd;
+	__le32 *txd;
+	u32 val;
+	u8 seq;
+
+	if (cmd == MCU_UNI_CMD(HIF_CTRL) ||
+	    cmd == MCU_UNI_CMD(SUSPEND) ||
+	    cmd == MCU_UNI_CMD(OFFLOAD))
+		mdev->mcu.timeout = HZ;
+	else
+		mdev->mcu.timeout = 3 * HZ;
+
+	seq = ++dev->mt76.mcu.msg_seq & 0xf;
+	if (!seq)
+		seq = ++dev->mt76.mcu.msg_seq & 0xf;
+
+	if (cmd == MCU_CMD(FW_SCATTER))
+		goto exit;
+
+	txd_len = cmd & __MCU_CMD_FIELD_UNI ? sizeof(*uni_txd) : sizeof(*mcu_txd);
+	txd = (__le32 *)skb_push(skb, txd_len);
+
+	val = FIELD_PREP(MT_TXD0_TX_BYTES, skb->len) |
+	      FIELD_PREP(MT_TXD0_PKT_FMT, MT_TX_TYPE_CMD) |
+	      FIELD_PREP(MT_TXD0_Q_IDX, MT_TX_MCU_PORT_RX_Q0);
+	txd[0] = cpu_to_le32(val);
+
+	val = MT_TXD1_LONG_FORMAT |
+	      FIELD_PREP(MT_TXD1_HDR_FORMAT, MT_HDR_FORMAT_CMD);
+	txd[1] = cpu_to_le32(val);
+
+	if (cmd & __MCU_CMD_FIELD_UNI) {
+		uni_txd = (struct mt7921_uni_txd *)txd;
+		uni_txd->len = cpu_to_le16(skb->len - sizeof(uni_txd->txd));
+		uni_txd->option = MCU_CMD_UNI_EXT_ACK;
+		uni_txd->cid = cpu_to_le16(mcu_cmd);
+		uni_txd->s2d_index = MCU_S2D_H2N;
+		uni_txd->pkt_type = MCU_PKT_ID;
+		uni_txd->seq = seq;
+
+		goto exit;
+	}
+
+	mcu_txd = (struct mt7921_mcu_txd *)txd;
+	mcu_txd->len = cpu_to_le16(skb->len - sizeof(mcu_txd->txd));
+	mcu_txd->pq_id = cpu_to_le16(MCU_PQ_ID(MT_TX_PORT_IDX_MCU,
+					       MT_TX_MCU_PORT_RX_Q0));
+	mcu_txd->pkt_type = MCU_PKT_ID;
+	mcu_txd->seq = seq;
+	mcu_txd->cid = mcu_cmd;
+	mcu_txd->s2d_index = MCU_S2D_H2N;
+	mcu_txd->ext_cid = FIELD_GET(__MCU_CMD_FIELD_EXT_ID, cmd);
+
+	if (mcu_txd->ext_cid || (cmd & __MCU_CMD_FIELD_CE)) {
+		if (cmd & __MCU_CMD_FIELD_QUERY)
+			mcu_txd->set_query = MCU_Q_QUERY;
+		else
+			mcu_txd->set_query = MCU_Q_SET;
+		mcu_txd->ext_cid_ack = !!mcu_txd->ext_cid;
+	} else {
+		mcu_txd->set_query = MCU_Q_NA;
+	}
+
+exit:
+	if (wait_seq)
+		*wait_seq = seq;
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(mt7921_mcu_fill_message);
+
+#endif

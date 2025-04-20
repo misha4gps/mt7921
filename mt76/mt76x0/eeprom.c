@@ -9,9 +9,12 @@
 #include <linux/of.h>
 #include <linux/mtd/mtd.h>
 #include <linux/mtd/partitions.h>
-#include <linux/etherdevice.h>
-#include <linux/unaligned.h>
 #include "mt76x0.h"
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 12, 0)
+#include <linux/unaligned.h>
+#else
+#include <asm/unaligned.h>
+#endif
 #include "eeprom.h"
 #include "../mt76x02_phy.h"
 

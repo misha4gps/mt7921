@@ -955,9 +955,14 @@ mt76_dma_init(struct mt76_dev *dev,
 	struct mt76_dev **priv;
 	int i;
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 11, 0)
 	dev->napi_dev = alloc_netdev_dummy(sizeof(struct mt76_dev *));
+
 	if (!dev->napi_dev)
 		return -ENOMEM;
+#else
+	init_dummy_netdev(dev->napi_dev);
+#endif
 
 	/* napi_dev private data points to mt76_dev parent, so, mt76_dev
 	 * can be retrieved given napi_dev
@@ -965,11 +970,15 @@ mt76_dma_init(struct mt76_dev *dev,
 	priv = netdev_priv(dev->napi_dev);
 	*priv = dev;
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 11, 0)
 	dev->tx_napi_dev = alloc_netdev_dummy(sizeof(struct mt76_dev *));
 	if (!dev->tx_napi_dev) {
 		free_netdev(dev->napi_dev);
 		return -ENOMEM;
 	}
+#else
+	init_dummy_netdev(dev->tx_napi_dev);
+#endif
 	priv = netdev_priv(dev->tx_napi_dev);
 	*priv = dev;
 

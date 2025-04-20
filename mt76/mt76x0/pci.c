@@ -44,7 +44,11 @@ static void mt76x0e_stop_hw(struct mt76x02_dev *dev)
 	mt76_clear(dev, MT_WPDMA_GLO_CFG, MT_WPDMA_GLO_CFG_RX_DMA_EN);
 }
 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 11, 0))
+static void mt76x0e_stop(struct ieee80211_hw *hw)
+#else
 static void mt76x0e_stop(struct ieee80211_hw *hw, bool suspend)
+#endif
 {
 	struct mt76x02_dev *dev = hw->priv;
 

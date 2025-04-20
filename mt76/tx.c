@@ -351,7 +351,12 @@ mt76_tx(struct mt76_phy *phy, struct ieee80211_sta *sta,
 	info->hw_queue |= FIELD_PREP(MT_TX_HW_QUEUE_PHY, phy->band_idx);
 
 	if ((info->flags & IEEE80211_TX_CTL_TX_OFFCHAN) ||
-	    (info->control.flags & IEEE80211_TX_CTRL_DONT_USE_RATE_MASK))
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 12, 0)
+	    (info->control.flags & IEEE80211_TX_CTRL_DONT_USE_RATE_MASK)
+#else
+	    (info->control.flags & IEEE80211_TX_CTRL_SCAN_TX)
+#endif
+	)
 		head = &wcid->tx_offchannel;
 	else
 		head = &wcid->tx_pending;

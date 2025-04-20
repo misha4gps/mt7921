@@ -318,7 +318,12 @@ mt7915_mcu_rx_radar_detected(struct mt7915_dev *dev, struct sk_buff *skb)
 						&dev->rdd2_chandef,
 						GFP_ATOMIC);
 	else
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 12, 0)
 		ieee80211_radar_detected(mphy->hw, NULL);
+#else
+		ieee80211_radar_detected(mphy->hw);
+#endif
+
 	dev->hw_pattern++;
 }
 
@@ -356,7 +361,11 @@ mt7915_mcu_cca_finish(void *priv, u8 *mac, struct ieee80211_vif *vif)
 	if (!vif->bss_conf.color_change_active || vif->type == NL80211_IFTYPE_STATION)
 		return;
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 12, 0)
 	ieee80211_color_change_finish(vif, 0);
+#else
+	ieee80211_color_change_finish(vif);
+#endif
 }
 
 static void
