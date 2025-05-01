@@ -68,7 +68,7 @@ mt76_scan_send_probe(struct mt76_dev *dev, struct cfg80211_ssid *ssid)
 	info = IEEE80211_SKB_CB(skb);
 	if (req->no_cck)
 		info->flags |= IEEE80211_TX_CTL_NO_CCK_RATE;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 12, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 11, 0)
 	info->control.flags |= IEEE80211_TX_CTRL_DONT_USE_RATE_MASK;
 #else
 	info->control.flags |= IEEE80211_TX_CTRL_SCAN_TX;

@@ -1228,14 +1228,14 @@ static void mt7915_sta_rc_work(void *data, struct ieee80211_sta *sta)
 
 static void mt7915_sta_rc_update(struct ieee80211_hw *hw,
 				 struct ieee80211_vif *vif,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 11, 0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 12, 0))
 				 struct ieee80211_link_sta *link_sta,
 #else
 				 struct ieee80211_sta *sta,
 #endif
 				 u32 changed)
 {
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 11, 0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 12, 0))
 	struct ieee80211_sta *sta = link_sta->sta;
 #endif
 	struct mt7915_phy *phy = mt7915_hw_phy(hw);
@@ -1781,7 +1781,7 @@ const struct ieee80211_ops mt7915_ops = {
 	.stop_ap = mt7915_stop_ap,
 	.sta_state = mt76_sta_state,
 	.sta_pre_rcu_remove = mt76_sta_pre_rcu_remove,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 11, 0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 12, 0))
 	.link_sta_rc_update = mt7915_sta_rc_update,
 #else
 	.sta_rc_update = mt7915_sta_rc_update,

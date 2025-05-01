@@ -1735,7 +1735,7 @@ s8 mt76_get_power_bound(struct mt76_phy *phy, s8 txpower)
 EXPORT_SYMBOL_GPL(mt76_get_power_bound);
 
 int mt76_get_txpower(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 11, 0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 12, 0))
 		     unsigned int link_id,
 #endif
 		     int *dbm)
